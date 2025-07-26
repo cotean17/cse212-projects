@@ -1,11 +1,10 @@
+using System;
+
 /// <summary>
-/// This queue is circular.  When people are added via AddPerson, then they are added to the 
-/// back of the queue (per FIFO rules).  When GetNextPerson is called, the next person
-/// in the queue is saved to be returned and then they are placed back into the back of the queue.  Thus,
-/// each person stays in the queue and is given turns.  When a person is added to the queue, 
-/// a turns parameter is provided to identify how many turns they will be given.  If the turns is 0 or
-/// less than they will stay in the queue forever.  If a person is out of turns then they will 
-/// not be added back into the queue.
+/// This queue is circular. When people are added via AddPerson, they are added to the
+/// back of the queue (FIFO). When GetNextPerson is called, the next person is returned,
+/// and then added to the back of the queue depending on their remaining turns.
+/// A person with 0 or less turns stays in the queue forever.
 /// </summary>
 public class TakingTurnsQueue
 {
@@ -14,10 +13,10 @@ public class TakingTurnsQueue
     public int Length => _people.Length;
 
     /// <summary>
-    /// Add new people to the queue with a name and number of turns
+    /// Add a new person to the queue.
     /// </summary>
-    /// <param name="name">Name of the person</param>
-    /// <param name="turns">Number of turns remaining</param>
+    /// <param name="name">The person's name</param>
+    /// <param name="turns">Number of turns (0 or less = infinite)</param>
     public void AddPerson(string name, int turns)
     {
         var person = new Person(name, turns);
@@ -25,29 +24,33 @@ public class TakingTurnsQueue
     }
 
     /// <summary>
-    /// Get the next person in the queue and return them. The person should
-    /// go to the back of the queue again unless the turns variable shows that they 
-    /// have no more turns left.  Note that a turns value of 0 or less means the 
-    /// person has an infinite number of turns.  An error exception is thrown 
-    /// if the queue is empty.
+    /// Get the next person and decide whether to return them to the queue.
     /// </summary>
+    /// <returns>The person whose turn it is</returns>
+    /// <exception cref="InvalidOperationException">If queue is empty</exception>
     public Person GetNextPerson()
     {
         if (_people.IsEmpty())
         {
             throw new InvalidOperationException("No one in the queue.");
         }
-        else
-        {
-            Person person = _people.Dequeue();
-            if (person.Turns > 1)
-            {
-                person.Turns -= 1;
-                _people.Enqueue(person);
-            }
 
-            return person;
+        var person = _people.Dequeue();
+
+        if (person.Turns <= 0)
+        {
+            // Infinite turns: always re-add
+            _people.Enqueue(person);
         }
+        else if (person.Turns > 1)
+        {
+            // Decrement turns and re-add
+            person.Turns--;
+            _people.Enqueue(person);
+        }
+        // If Turns == 1, do not re-add
+
+        return person;
     }
 
     public override string ToString()
